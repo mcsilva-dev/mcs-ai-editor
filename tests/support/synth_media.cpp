@@ -63,7 +63,13 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
         if (globalHeader) {
             vc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         }
-        if (avcodec_open2(vc, codec, nullptr) < 0) {
+        // Cada quadro tem brilho diferente: sem isto a detecção de corte de cena transforma
+        // todos em keyframes e os testes de seek no meio do GOP não testariam nada.
+        AVDictionary* opts = nullptr;
+        av_dict_set(&opts, "sc_threshold", "1000000000", 0);
+        const int opened = avcodec_open2(vc, codec, &opts);
+        av_dict_free(&opts);
+        if (opened < 0) {
             return QStringLiteral("avcodec_open2(mpeg4) falhou");
         }
         vs = avformat_new_stream(oc, nullptr);
@@ -109,6 +115,11 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
             }
             if (r < 0) {
                 return false;
+            }
+            // O encoder não preenche a duração; sem ela o último pacote fica fora da edit list
+            // do .mov e o demuxer o marca como DISCARD (o quadro final "some").
+            if (pkt->duration <= 0) {
+                pkt->duration = (c == vc) ? 1 : 48000 / s.fps;
             }
             av_packet_rescale_ts(pkt, c->time_base, st->time_base);
             pkt->stream_index = st->index;
@@ -168,6 +179,37 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
         return QStringLiteral("av_write_trailer falhou");
     }
     return {};
+}
+
+PacketStats videoPacketStats(const QString& path) {
+    const QByteArray file = path.toUtf8();
+    AVFormatContext* fmt = nullptr;
+    if (avformat_open_input(&fmt, file.constData(), nullptr, nullptr) < 0) {
+        return {};
+    }
+    AVPacket* pkt = av_packet_alloc();
+    auto cleanup = qScopeGuard([&] {
+        av_packet_free(&pkt);
+        avformat_close_input(&fmt);
+    });
+    const int vs = av_find_best_stream(fmt, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    if (avformat_find_stream_info(fmt, nullptr) < 0 || vs < 0) {
+        return {};
+    }
+    PacketStats stats{0, 0, 0};
+    while (av_read_frame(fmt, pkt) >= 0) {
+        if (pkt->stream_index == vs) {
+            ++stats.packets;
+            if (pkt->flags & AV_PKT_FLAG_KEY) {
+                ++stats.keyframes;
+            }
+            if (pkt->flags & AV_PKT_FLAG_DISCARD) {
+                ++stats.discarded;
+            }
+        }
+        av_packet_unref(pkt);
+    }
+    return stats;
 }
 
 } // namespace mcs::test

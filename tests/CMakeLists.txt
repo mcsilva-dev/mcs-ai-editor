@@ -24,3 +24,4 @@ target_link_directories(mcs_test_support PUBLIC ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(mcs_test_support PUBLIC Qt6::Core ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
 
 mcs_add_test(tst_probe mcs_media mcs_test_support)
+mcs_add_test(tst_decoder mcs_media mcs_test_support)

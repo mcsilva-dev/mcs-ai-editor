@@ -13,6 +13,8 @@ add_library(mcs_media STATIC
     media/ffmpeg_util.cpp
     media/probe.h
     media/probe.cpp
+    media/frame_decoder.h
+    media/frame_decoder.cpp
 )
 target_include_directories(mcs_media PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(mcs_media SYSTEM PRIVATE ${FFMPEG_INCLUDE_DIRS})

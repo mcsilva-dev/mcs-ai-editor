@@ -24,4 +24,13 @@ int expectedGrayForFrame(int k);
 // Grava um .mov (mpeg4 + pcm_s16le) usando o FFmpeg linkado. Retorna "" em sucesso.
 QString writeSynthMov(const QString& path, const SynthSpec& spec = {});
 
+// Conta pacotes de vídeo e keyframes do arquivo (-1 em erro). Garante que os testes de seek
+// exercitam GOP de verdade (não um arquivo só de keyframes).
+struct PacketStats {
+    int packets = -1;
+    int keyframes = -1;
+    int discarded = -1; // fora da edit list do .mov: o decoder os descarta
+};
+PacketStats videoPacketStats(const QString& path);
+
 } // namespace mcs::test
