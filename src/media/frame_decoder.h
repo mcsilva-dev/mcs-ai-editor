@@ -31,6 +31,8 @@ class FrameDecoder {
     std::int64_t frameCount() const;
     core::Rational fps() const;
     QSize size() const;
+    // Quantos seeks foram feitos (diagnóstico: avançar em sequência não deve fazer seek).
+    std::int64_t seekCount() const;
 
   private:
     struct Impl;

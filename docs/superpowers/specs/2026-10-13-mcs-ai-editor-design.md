@@ -88,7 +88,7 @@ do analista. Roda em paralelo aos marcos do Subprojeto 1; a frente 4 alimenta v0
 | GPU | Qt RHI (`QRhi`, `QRhiWidget`) | D3D11/12, Vulkan, Metal com um código só |
 | Decode/encode | FFmpeg (libav*) | padrão da indústria; build GPL completo (x264/x265 permitidos) |
 | Interop | OpenTimelineIO (C++) | troca de timelines; FCPXML/EDL escritos em C++ |
-| Áudio | `QAudioSink` | já incluso no Qt; trocar por miniaudio se latência não servir |
+| Áudio | miniaudio (vcpkg, Unlicense/MIT-0) | baixa latência, contagem exata de amostras, backend "nulo" para testar no CI (decidido 2026-10-13: QAudioSink exigiria o módulo Qt Multimedia, que embute outro FFmpeg) |
 | Undo | `QUndoStack` | já incluso no Qt |
 | Testes | Qt Test | já incluso no Qt |
 | Dependências | Qt via instalador oficial / `aqtinstall`; demais via **vcpkg (manifesto)** | versões fixadas no repo |
@@ -216,16 +216,16 @@ periódico com backups rotativos.
 |---|---|---|
 | v0.1 | Esqueleto: CMake + Qt + FFmpeg, janela, CI Win/Linux/mac | build verde nos 3 SOs |
 | v0.2 | Importar mídia + Media Pool + viewer com decode | testes de probe/decode com mídia sintética |
-| v0.3 | Timeline multi-trilha + playback com áudio sincronizado | drift A/V < 1 quadro em 10 min |
+| v0.3 | Timeline multi-trilha + playback com áudio sincronizado (viewer CPU) | drift A/V < 1 quadro em 10 min (tempo virtual) + playback real no backend nulo |
 | v0.4 | Edição básica: corte, mover, blade, undo/redo | testes de operação em tabela |
 | v0.5 | Trims avançados: ripple, roll, slip, slide, JKL | testes de operação em tabela |
-| v0.6 | Inspector + keyframes | testes de interpolação + golden render |
+| v0.6 | Inspector + keyframes; viewers e composição na GPU (QRhi) | testes de interpolação + golden render |
 | v0.7 | Transições + títulos + fades de áudio | golden render (PSNR) |
-| v0.8 | Proxies + render cache | 4K H.265 em tempo real em GPU média |
+| v0.8 | Proxies + render cache; decode por hardware (D3D11VA), prefetch/cache em workers | 4K H.265 em tempo real em GPU média |
 | v0.9 | Deliver + import/export OTIO/FCPXML/EDL | round-trip com timeline exportada do Resolve |
 | v1.0 | Instalador Windows, estabilização, docs | checklist de release |
 
-v0.3 é o maior risco técnico e foi posicionado cedo de propósito.
+v0.3 é o maior risco técnico e foi posicionado cedo de propósito. Remanejado em 2026-10-13 (aprovado pelo Miguel): GPU/QRhi no v0.6 (quando houver composição) e decode por hardware no v0.8 (quando o alvo for 4K em tempo real); o v0.3 foca só em timeline + sincronia A/V.
 
 ## 10. Testes e qualidade
 

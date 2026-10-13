@@ -140,6 +140,32 @@ class TstDecoder : public QObject {
         checkFrame(d, 7);
     }
 
+    // Avançar quadro a quadro não faz seek (essencial para o playback).
+    // Clipe mais lento que a timeline (24p em 25p) pede o mesmo quadro duas vezes: sem seek.
+    void repeatedIndexDoesNotSeek() {
+        mcs::media::FrameDecoder d;
+        QVERIFY(d.open(video_));
+        checkFrame(d, 10);
+        checkFrame(d, 10);
+        checkFrame(d, 11);
+        checkFrame(d, 11);
+        checkFrame(d, 12);
+        QCOMPARE(d.seekCount(), 1);
+    }
+
+    void sequentialReadsDoNotSeek() {
+        mcs::media::FrameDecoder d;
+        QVERIFY(d.open(video_));
+        for (int k = 0; k < 60; ++k) {
+            checkFrame(d, k);
+        }
+        QCOMPARE(d.seekCount(), 1);
+        checkFrame(d, 10); // voltar exige seek
+        QCOMPARE(d.seekCount(), 2);
+        checkFrame(d, 50); // salto grande para frente também
+        QCOMPARE(d.seekCount(), 3);
+    }
+
     // Review Focus 1
     void accentedPathDecodes() {
         const QString sub = dir_.filePath(QStringLiteral("pasta com espaço ção"));

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <cstdint>
 
 namespace mcs::test {
 
@@ -20,6 +21,8 @@ struct SynthSpec {
     // Reproduz arquivos com edit list mais curta que as amostras (ex.: clipe cortado no celular):
     // o último quadro fica fora da edição e o demuxer o descarta.
     bool omitPacketDuration = false;
+    // Áudio começa N amostras depois do vídeo (gravações de OBS, câmeras, MPEG-TS).
+    int audioDelaySamples = 0;
 };
 
 // Luma (faixa limitada 16..235) gravado no quadro k.
@@ -27,6 +30,11 @@ int lumaForFrame(int k);
 
 // Cinza RGB esperado após decode (faixa limitada → cheia) para o quadro k.
 int expectedGrayForFrame(int k);
+
+// Canal esquerdo da amostra n do áudio PCM sintético (o direito é o negativo).
+std::int16_t sampleValueAt(std::int64_t n);
+// O mesmo valor convertido para float como o FFmpeg/swresample entrega (s16 / 32768).
+float expectedSampleAt(std::int64_t n);
 
 // Grava um .mov (mpeg4 + pcm_s16le) usando o FFmpeg linkado. Retorna "" em sucesso.
 QString writeSynthMov(const QString& path, const SynthSpec& spec = {});

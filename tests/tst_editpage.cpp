@@ -1,7 +1,9 @@
+#include "playback/player.h"
 #include "support/synth_media.h"
 #include "ui/edit_page.h"
 #include "ui/media_pool_model.h"
 #include "ui/source_viewer.h"
+#include "ui/timeline_view.h"
 
 #include <QDropEvent>
 #include <QListView>
@@ -81,6 +83,54 @@ class TstEditPage : public QObject {
         QDropEvent drop(QPointF(5, 5), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
         QCoreApplication::sendEvent(page.mediaPoolView()->viewport(), &drop);
         QCOMPARE(pool.rowCount(), 1);
+    }
+
+    void appendBuildsLinkedClips() {
+        mcs::ui::MediaPoolModel pool;
+        mcs::ui::EditPage page(&pool);
+        QVERIFY(pool.importFiles({video_}).isEmpty());
+        page.appendToTimeline(pool.index(0));
+        page.appendToTimeline(pool.index(0));
+        QCOMPARE(page.timeline().video[0].clips.size(), size_t(2));
+        QCOMPARE(page.timeline().audio[0].clips.size(), size_t(2));
+        QCOMPARE(page.timeline().duration(), 60);
+    }
+
+    void playbackAdvancesPlayhead() {
+        mcs::ui::MediaPoolModel pool;
+        mcs::ui::EditPage page(&pool);
+        page.player()->setAudioBackend(mcs::playback::AudioOutput::Backend::Null);
+        QVERIFY(pool.importFiles({video_}).isEmpty());
+        page.appendToTimeline(pool.index(0));
+        page.togglePlayback();
+        QTest::qWait(400);
+        page.togglePlayback();
+        QVERIFY(page.timelineView()->playhead() > 3);
+        QVERIFY(!page.programFrame().isNull());
+    }
+
+    void clickingTimelineSeeksAndShowsFrame() {
+        mcs::ui::MediaPoolModel pool;
+        mcs::ui::EditPage page(&pool);
+        QVERIFY(pool.importFiles({video_}).isEmpty());
+        page.appendToTimeline(pool.index(0));
+        auto* view = page.timelineView();
+        QTest::mouseClick(view, Qt::LeftButton, {}, QPoint(view->xForFrame(7), 10));
+        QCOMPARE(page.player()->currentFrame(), 7);
+        QVERIFY(qAbs(centerGray(page.programFrame()) - mcs::test::expectedGrayForFrame(7)) <= 4);
+    }
+
+    // Review Focus 5
+    void playAtEndRestartsFromZero() {
+        mcs::ui::MediaPoolModel pool;
+        mcs::ui::EditPage page(&pool);
+        page.player()->setAudioBackend(mcs::playback::AudioOutput::Backend::Null);
+        QVERIFY(pool.importFiles({video_}).isEmpty());
+        page.appendToTimeline(pool.index(0));
+        page.player()->seek(page.timeline().duration());
+        page.togglePlayback();
+        QVERIFY(page.player()->currentFrame() < 5);
+        page.togglePlayback();
     }
 
     // Review Focus 5

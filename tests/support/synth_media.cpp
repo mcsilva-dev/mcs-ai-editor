@@ -24,6 +24,14 @@ int expectedGrayForFrame(int k) {
     return static_cast<int>(std::lround(std::clamp(v, 0.0, 255.0)));
 }
 
+std::int16_t sampleValueAt(std::int64_t n) {
+    return static_cast<std::int16_t>(((n % 2000) - 1000) * 16);
+}
+
+float expectedSampleAt(std::int64_t n) {
+    return sampleValueAt(n) / 32768.0f;
+}
+
 QString writeSynthMov(const QString& path, const SynthSpec& s) {
     const QByteArray file = path.toUtf8();
     AVFormatContext* oc = nullptr;
@@ -219,9 +227,18 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
             if (av_frame_get_buffer(f, 0) < 0) {
                 return QStringLiteral("av_frame_get_buffer(audio) falhou");
             }
-            av_samples_set_silence(f->data, 0, audioChunk, ac->ch_layout.nb_channels,
-                                   ac->sample_fmt);
-            f->pts = audioPts;
+            if (ac->sample_fmt == AV_SAMPLE_FMT_S16) {
+                auto* pcm = reinterpret_cast<std::int16_t*>(f->data[0]);
+                for (int i = 0; i < audioChunk; ++i) {
+                    const std::int16_t v = sampleValueAt(audioPts + i);
+                    pcm[2 * i] = v;
+                    pcm[2 * i + 1] = static_cast<std::int16_t>(-v);
+                }
+            } else {
+                av_samples_set_silence(f->data, 0, audioChunk, ac->ch_layout.nb_channels,
+                                       ac->sample_fmt);
+            }
+            f->pts = audioPts + s.audioDelaySamples; // conteúdo segue a rampa a partir de 0
             audioPts += audioChunk;
             if (avcodec_send_frame(ac, f) < 0 || !drain(ac, as)) {
                 return QStringLiteral("encode de áudio falhou no quadro %1").arg(k);

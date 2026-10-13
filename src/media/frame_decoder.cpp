@@ -24,6 +24,14 @@ struct FrameDecoder::Impl {
     core::Rational fps;
     std::int64_t count = 0;
     std::int64_t startPts = 0;
+    std::int64_t lastIndex = -1; // último quadro entregue (-1: próximo pedido faz seek)
+    bool drained = false;        // fim do arquivo lido: decoder esvaziando (ainda solta quadros)
+    bool exhausted = false;      // decoder respondeu EOF: não há mais quadros sem seek
+    std::int64_t seeks = 0;
+    // Último quadro entregue e o pedido que o gerou: pedidos em [lastRequest, lastIndex]
+    // (quadro repetido em clipe mais lento que a timeline, ou VFR) reusam a imagem, sem seek.
+    std::optional<DecodedFrame> last;
+    std::int64_t lastRequest = -1;
 
     ~Impl() {
         sws_freeContext(sws);
@@ -109,6 +117,10 @@ core::Rational FrameDecoder::fps() const {
     return d_ ? d_->fps : core::Rational{};
 }
 
+std::int64_t FrameDecoder::seekCount() const {
+    return d_ ? d_->seeks : 0;
+}
+
 QSize FrameDecoder::size() const {
     return d_ ? QSize(d_->st->codecpar->width, d_->st->codecpar->height) : QSize();
 }
@@ -118,13 +130,27 @@ std::optional<DecodedFrame> FrameDecoder::frameAt(std::int64_t index) {
         return std::nullopt;
     }
     Impl& s = *d_;
-    const std::int64_t target = s.startPts + av_rescale_q(index, s.frameTb(), s.st->time_base);
-    if (av_seek_frame(s.fmt, s.streamIndex, target, AVSEEK_FLAG_BACKWARD) < 0) {
-        return std::nullopt;
+    if (s.last && index >= s.lastRequest && index <= s.lastIndex) {
+        return s.last;
     }
-    avcodec_flush_buffers(s.dec);
+    s.last.reset();
+    // Avanço curto a partir do último quadro: continua decodificando, sem seek.
+    constexpr std::int64_t kForwardWindow = 30;
+    const bool sequential = s.lastIndex >= 0 && !s.exhausted && index > s.lastIndex &&
+                            index <= s.lastIndex + kForwardWindow;
+    if (!sequential) {
+        const std::int64_t target = s.startPts + av_rescale_q(index, s.frameTb(), s.st->time_base);
+        if (av_seek_frame(s.fmt, s.streamIndex, target, AVSEEK_FLAG_BACKWARD) < 0) {
+            s.lastIndex = -1;
+            return std::nullopt;
+        }
+        avcodec_flush_buffers(s.dec);
+        s.drained = false;
+        s.exhausted = false;
+        ++s.seeks;
+    }
+    s.lastIndex = -1; // só volta a valer quando um quadro for entregue
 
-    bool draining = false;
     for (;;) {
         const int r = avcodec_receive_frame(s.dec, s.frame);
         if (r == 0) {
@@ -141,18 +167,24 @@ std::optional<DecodedFrame> FrameDecoder::frameAt(std::int64_t index) {
                 if (out.image.isNull()) {
                     return std::nullopt;
                 }
+                s.lastIndex = got;
+                s.lastRequest = index;
+                s.last = out;
                 return out;
             }
             av_frame_unref(s.frame);
             continue;
         }
         // EOF, erro, ou decoder já esvaziado sem chegar ao quadro: não há quadro.
-        if (r != AVERROR(EAGAIN) || draining) {
+        if (r == AVERROR_EOF) {
+            s.exhausted = true;
+        }
+        if (r != AVERROR(EAGAIN) || s.drained) {
             return std::nullopt;
         }
         if (av_read_frame(s.fmt, s.pkt) < 0) {
             avcodec_send_packet(s.dec, nullptr); // esvazia o decoder
-            draining = true;
+            s.drained = true;
             continue;
         }
         if (s.pkt->stream_index == s.streamIndex) {

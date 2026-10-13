@@ -2,6 +2,8 @@ add_library(mcs_core STATIC
     core/rational.h
     core/rational.cpp
     core/media_info.h
+    core/timeline.h
+    core/timeline.cpp
 )
 target_include_directories(mcs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mcs_core PUBLIC Qt6::Core PRIVATE mcs_warnings)
@@ -15,11 +17,36 @@ add_library(mcs_media STATIC
     media/probe.cpp
     media/frame_decoder.h
     media/frame_decoder.cpp
+    media/audio_decoder.h
+    media/audio_decoder.cpp
 )
 target_include_directories(mcs_media PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(mcs_media SYSTEM PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(mcs_media PUBLIC ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(mcs_media PUBLIC mcs_core Qt6::Gui ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
+
+# miniaudio compilado à parte, sem as flags de aviso-como-erro do projeto (código de terceiros).
+add_library(mcs_miniaudio STATIC playback/miniaudio_impl.cpp)
+target_include_directories(mcs_miniaudio SYSTEM PUBLIC ${MINIAUDIO_INCLUDE_DIR})
+target_link_libraries(mcs_miniaudio PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
+if(UNIX)
+    target_link_libraries(mcs_miniaudio PUBLIC m) # sin/pow etc. ficam na libm no Linux
+endif()
+
+add_library(mcs_playback STATIC
+    playback/timeline_video.h
+    playback/timeline_video.cpp
+    playback/timeline_audio.h
+    playback/timeline_audio.cpp
+    playback/playback_engine.h
+    playback/playback_engine.cpp
+    playback/audio_output.h
+    playback/audio_output.cpp
+    playback/player.h
+    playback/player.cpp
+)
+target_include_directories(mcs_playback PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(mcs_playback PUBLIC mcs_media Qt6::Core PRIVATE mcs_miniaudio mcs_warnings)
 
 add_library(mcs_ui STATIC
     ui/theme.h
@@ -34,10 +61,12 @@ add_library(mcs_ui STATIC
     ui/source_viewer.cpp
     ui/edit_page.h
     ui/edit_page.cpp
+    ui/timeline_view.h
+    ui/timeline_view.cpp
 )
 target_include_directories(mcs_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(mcs_ui PUBLIC MCS_VERSION="${PROJECT_VERSION}")
-target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media PRIVATE Qt6::Concurrent mcs_warnings)
+target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media mcs_playback PRIVATE Qt6::Concurrent mcs_warnings)
 
 qt_add_executable(mcs_ai_editor WIN32 MACOSX_BUNDLE app/main.cpp)
 target_link_libraries(mcs_ai_editor PRIVATE mcs_ui mcs_media mcs_warnings)
