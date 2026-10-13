@@ -9,11 +9,15 @@ target_link_libraries(mcs_core PUBLIC Qt6::Core PRIVATE mcs_warnings)
 add_library(mcs_media STATIC
     media/ffmpeg_info.h
     media/ffmpeg_info.cpp
+    media/ffmpeg_util.h
+    media/ffmpeg_util.cpp
+    media/probe.h
+    media/probe.cpp
 )
 target_include_directories(mcs_media PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(mcs_media SYSTEM PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(mcs_media PUBLIC ${FFMPEG_LIBRARY_DIRS})
-target_link_libraries(mcs_media PUBLIC Qt6::Core ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
+target_link_libraries(mcs_media PUBLIC mcs_core Qt6::Gui ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
 
 add_library(mcs_ui STATIC
     ui/theme.h
