@@ -25,6 +25,13 @@ target_include_directories(mcs_media SYSTEM PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(mcs_media PUBLIC ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(mcs_media PUBLIC mcs_core Qt6::Gui ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
 
+add_library(mcs_playback STATIC
+    playback/timeline_video.h
+    playback/timeline_video.cpp
+)
+target_include_directories(mcs_playback PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(mcs_playback PUBLIC mcs_media PRIVATE mcs_warnings)
+
 add_library(mcs_ui STATIC
     ui/theme.h
     ui/theme.cpp
