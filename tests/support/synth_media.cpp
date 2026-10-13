@@ -10,6 +10,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/channel_layout.h>
+#include <libavutil/samplefmt.h>
 }
 
 namespace mcs::test {
@@ -26,18 +27,22 @@ int expectedGrayForFrame(int k) {
 QString writeSynthMov(const QString& path, const SynthSpec& s) {
     const QByteArray file = path.toUtf8();
     AVFormatContext* oc = nullptr;
-    if (avformat_alloc_output_context2(&oc, nullptr, "mov", file.constData()) < 0 || !oc) {
+    if (avformat_alloc_output_context2(&oc, nullptr, s.container, file.constData()) < 0 || !oc) {
         return QStringLiteral("avformat_alloc_output_context2 falhou");
     }
     AVCodecContext* vc = nullptr;
     AVCodecContext* ac = nullptr;
+    AVCodecContext* pc = nullptr;
     AVPacket* pkt = av_packet_alloc();
+    AVPacket* coverPkt = av_packet_alloc();
     AVFrame* f = av_frame_alloc();
     auto cleanup = qScopeGuard([&] {
         av_frame_free(&f);
         av_packet_free(&pkt);
+        av_packet_free(&coverPkt);
         avcodec_free_context(&vc);
         avcodec_free_context(&ac);
+        avcodec_free_context(&pc);
         if (oc->pb) {
             avio_closep(&oc->pb);
         }
@@ -79,12 +84,14 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
 
     AVStream* as = nullptr;
     if (s.audio) {
-        const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_PCM_S16LE);
+        // MP4 não aceita PCM: usa AAC (nativo), como um .m4a real.
+        const bool aac = std::strcmp(s.container, "mp4") == 0;
+        const AVCodec* codec = avcodec_find_encoder(aac ? AV_CODEC_ID_AAC : AV_CODEC_ID_PCM_S16LE);
         if (!codec) {
-            return QStringLiteral("encoder pcm_s16le ausente no FFmpeg");
+            return QStringLiteral("encoder de áudio ausente no FFmpeg");
         }
         ac = avcodec_alloc_context3(codec);
-        ac->sample_fmt = AV_SAMPLE_FMT_S16;
+        ac->sample_fmt = aac ? AV_SAMPLE_FMT_FLTP : AV_SAMPLE_FMT_S16;
         ac->sample_rate = 48000;
         av_channel_layout_default(&ac->ch_layout, 2);
         ac->time_base = AVRational{1, 48000};
@@ -92,11 +99,50 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
             ac->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         }
         if (avcodec_open2(ac, codec, nullptr) < 0) {
-            return QStringLiteral("avcodec_open2(pcm_s16le) falhou");
+            return QStringLiteral("avcodec_open2(áudio) falhou");
         }
         as = avformat_new_stream(oc, nullptr);
         avcodec_parameters_from_context(as->codecpar, ac);
         as->time_base = ac->time_base;
+    }
+
+    AVStream* cs = nullptr;
+    if (s.coverArt) {
+        // JPEG como nas capas de MP3 reais (o encoder PNG exige zlib, ausente no nosso FFmpeg).
+        const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
+        if (!codec) {
+            return QStringLiteral("encoder mjpeg ausente no FFmpeg");
+        }
+        pc = avcodec_alloc_context3(codec);
+        pc->width = 16;
+        pc->height = 16;
+        pc->pix_fmt = AV_PIX_FMT_YUV420P;
+        pc->color_range = AVCOL_RANGE_JPEG;
+        pc->time_base = AVRational{1, 25};
+        if (avcodec_open2(pc, codec, nullptr) < 0) {
+            return QStringLiteral("avcodec_open2(mjpeg) falhou");
+        }
+        f->format = pc->pix_fmt;
+        f->width = pc->width;
+        f->height = pc->height;
+        if (av_frame_get_buffer(f, 0) < 0) {
+            return QStringLiteral("av_frame_get_buffer(capa) falhou");
+        }
+        for (int plane = 0; plane < 3; ++plane) {
+            const int rows = plane == 0 ? f->height : f->height / 2;
+            const auto cols = static_cast<size_t>(plane == 0 ? f->width : f->width / 2);
+            for (int row = 0; row < rows; ++row) {
+                std::memset(f->data[plane] + row * f->linesize[plane], plane == 0 ? 200 : 128,
+                            cols);
+            }
+        }
+        if (avcodec_send_frame(pc, f) < 0 || avcodec_receive_packet(pc, coverPkt) < 0) {
+            return QStringLiteral("encode da capa falhou");
+        }
+        av_frame_unref(f);
+        cs = avformat_new_stream(oc, nullptr);
+        avcodec_parameters_from_context(cs->codecpar, pc);
+        cs->disposition = AV_DISPOSITION_ATTACHED_PIC;
     }
 
     if (!(oc->oformat->flags & AVFMT_NOFILE) &&
@@ -105,6 +151,13 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
     }
     if (avformat_write_header(oc, nullptr) < 0) {
         return QStringLiteral("avformat_write_header falhou");
+    }
+    if (cs) {
+        coverPkt->stream_index = cs->index;
+        coverPkt->flags |= AV_PKT_FLAG_KEY;
+        if (av_interleaved_write_frame(oc, coverPkt) < 0) {
+            return QStringLiteral("gravação da capa falhou");
+        }
     }
 
     auto drain = [&](AVCodecContext* c, AVStream* st) {
@@ -118,7 +171,7 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
             }
             // O encoder não preenche a duração; sem ela o último pacote fica fora da edit list
             // do .mov e o demuxer o marca como DISCARD (o quadro final "some").
-            if (pkt->duration <= 0) {
+            if (pkt->duration <= 0 && !s.omitPacketDuration) {
                 pkt->duration = (c == vc) ? 1 : 48000 / s.fps;
             }
             av_packet_rescale_ts(pkt, c->time_base, st->time_base);
@@ -130,6 +183,9 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
     };
 
     const int samplesPerFrame = 48000 / s.fps;
+    // AAC exige blocos de frame_size amostras (1024); PCM aceita qualquer tamanho (frame_size 0).
+    const int audioChunk = (ac && ac->frame_size > 0) ? ac->frame_size : samplesPerFrame;
+    std::int64_t audioPts = 0;
     for (int k = 0; k < s.frames; ++k) {
         if (vc) {
             av_frame_unref(f);
@@ -153,17 +209,20 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
                 return QStringLiteral("encode de vídeo falhou no quadro %1").arg(k);
             }
         }
-        if (ac) {
+        // Áudio em silêncio acompanhando o vídeo até o fim do quadro k.
+        while (ac && audioPts < static_cast<std::int64_t>(k + 1) * samplesPerFrame) {
             av_frame_unref(f);
             f->format = ac->sample_fmt;
             f->sample_rate = ac->sample_rate;
             av_channel_layout_copy(&f->ch_layout, &ac->ch_layout);
-            f->nb_samples = samplesPerFrame;
+            f->nb_samples = audioChunk;
             if (av_frame_get_buffer(f, 0) < 0) {
                 return QStringLiteral("av_frame_get_buffer(audio) falhou");
             }
-            std::memset(f->data[0], 0, static_cast<size_t>(samplesPerFrame) * 2 * 2);
-            f->pts = static_cast<std::int64_t>(k) * samplesPerFrame;
+            av_samples_set_silence(f->data, 0, audioChunk, ac->ch_layout.nb_channels,
+                                   ac->sample_fmt);
+            f->pts = audioPts;
+            audioPts += audioChunk;
             if (avcodec_send_frame(ac, f) < 0 || !drain(ac, as)) {
                 return QStringLiteral("encode de áudio falhou no quadro %1").arg(k);
             }
@@ -179,6 +238,20 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
         return QStringLiteral("av_write_trailer falhou");
     }
     return {};
+}
+
+bool hasAttachedPicture(const QString& path) {
+    const QByteArray file = path.toUtf8();
+    AVFormatContext* fmt = nullptr;
+    if (avformat_open_input(&fmt, file.constData(), nullptr, nullptr) < 0) {
+        return false;
+    }
+    bool found = false;
+    for (unsigned i = 0; i < fmt->nb_streams; ++i) {
+        found = found || (fmt->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC) != 0;
+    }
+    avformat_close_input(&fmt);
+    return found;
 }
 
 PacketStats videoPacketStats(const QString& path) {

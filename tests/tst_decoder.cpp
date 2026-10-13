@@ -99,6 +99,47 @@ class TstDecoder : public QObject {
         QVERIFY(!d.frameAt(0));
     }
 
+    // Review Focus 5: capa de álbum não abre como vídeo.
+    void coverArtIsNotVideo() {
+        const QString path = dir_.filePath(QStringLiteral("musica_com_capa.m4a"));
+        mcs::test::SynthSpec s;
+        s.video = false;
+        s.coverArt = true;
+        s.container = "mp4";
+        QCOMPARE(mcs::test::writeSynthMov(path, s), QString());
+        QVERIFY(mcs::test::hasAttachedPicture(path)); // o arquivo reproduz o caso
+        mcs::media::FrameDecoder d;
+        QVERIFY(!d.open(path));
+    }
+
+    // Edit list mais curta que as amostras: a contagem segue a edição, não as amostras.
+    void editListLimitsFrameCount() {
+        const QString path = dir_.filePath(QStringLiteral("cortado.mov"));
+        mcs::test::SynthSpec s;
+        s.omitPacketDuration = true;
+        QCOMPARE(mcs::test::writeSynthMov(path, s), QString());
+        QCOMPARE(mcs::test::videoPacketStats(path).discarded, 1); // o arquivo reproduz o caso
+        mcs::media::FrameDecoder d;
+        QVERIFY(d.open(path));
+        QCOMPARE(d.frameCount(), 59);
+        checkFrame(d, 58);
+    }
+
+    // Review Focus 3: contêiner sem índice (MPEG-TS) também dá o quadro exato.
+    void unindexedContainerSeeksExactly() {
+        const QString path = dir_.filePath(QStringLiteral("sem_indice.ts"));
+        mcs::test::SynthSpec s;
+        s.container = "mpegts";
+        s.audio = false;
+        QCOMPARE(mcs::test::writeSynthMov(path, s), QString());
+        mcs::media::FrameDecoder d;
+        QVERIFY(d.open(path));
+        checkFrame(d, 40);
+        checkFrame(d, 5);
+        checkFrame(d, 30);
+        checkFrame(d, 7);
+    }
+
     // Review Focus 1
     void accentedPathDecodes() {
         const QString sub = dir_.filePath(QStringLiteral("pasta com espaço ção"));

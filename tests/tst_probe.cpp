@@ -69,6 +69,21 @@ class TstProbe : public QObject {
         QVERIFY(r.info->audio);
     }
 
+    // Review Focus 5: capa de álbum (attached picture) não é vídeo.
+    void audioWithCoverArtHasNoVideo() {
+        const QString path = dir_.filePath(QStringLiteral("musica_com_capa.m4a"));
+        mcs::test::SynthSpec s;
+        s.video = false;
+        s.coverArt = true;
+        s.container = "mp4";
+        QCOMPARE(mcs::test::writeSynthMov(path, s), QString());
+        QVERIFY(mcs::test::hasAttachedPicture(path)); // o arquivo reproduz o caso
+        const auto r = mcs::media::probe(path);
+        QVERIFY2(r.info, qPrintable(r.error));
+        QVERIFY(!r.info->video);
+        QVERIFY(r.info->audio);
+    }
+
     // Review Focus 1
     void accentedPathWorks() {
         const auto r = mcs::media::probe(accented_);

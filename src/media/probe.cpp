@@ -37,7 +37,7 @@ ProbeResult probe(const QString& path) {
         info.durationSeconds = static_cast<double>(fmt->duration) / AV_TIME_BASE;
     }
 
-    const int v = av_find_best_stream(fmt, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    const int v = detail::videoStreamOf(fmt);
     if (v >= 0) {
         AVStream* st = fmt->streams[v];
         const AVCodecParameters* p = st->codecpar;

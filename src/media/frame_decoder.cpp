@@ -73,7 +73,7 @@ bool FrameDecoder::open(const QString& path, QString* error) {
         return fail("\"%1\" has no readable streams.");
     }
     const AVCodec* codec = nullptr;
-    d_->streamIndex = av_find_best_stream(d_->fmt, AVMEDIA_TYPE_VIDEO, -1, -1, &codec, 0);
+    d_->streamIndex = detail::videoStreamOf(d_->fmt, &codec);
     if (d_->streamIndex < 0 || !codec) {
         return fail("\"%1\" has no video.");
     }
