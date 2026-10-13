@@ -1,7 +1,7 @@
 # MCS AI Editor — Design (Subprojeto 1: Núcleo + Edit)
 
 - **Data:** 2026-10-13
-- **Status:** aprovado em conversa; aguardando revisão desta spec escrita
+- **Status:** aprovado (2026-10-13), com Subprojeto 0 ampliado
 - **Autor:** Miguel Silva (com Claude)
 
 ## 1. Objetivo
@@ -24,8 +24,10 @@ tempo real (via proxy quando necessário) e exportar sem crash.
 - O Resolve é referência de **funcionalidade**, não de implementação. Fontes permitidas:
   manual oficial público, documentação pública de scripting, observação da interface e
   listagem de nomes de arquivos instalados.
-- O **REA** é usado apenas no Subprojeto 0 (inventário): extrair o instalador e listar
-  nomes/descrições de ferramentas. Sem descompilação de algoritmos.
+- O **REA** e a análise do Resolve ficam no Subprojeto 0 (decomposição clean-room, ver
+  seção 3.1). Permitido: estrutura, nomes, parâmetros, formatos e comportamento
+  observável. Proibido: descompilar algoritmos e reimplementar a partir do pseudocódigo
+  (obra derivada — risco de DMCA para o projeto GPL inteiro; vedado pelo EULA).
 - Interoperabilidade com o Resolve apenas por formatos abertos que ele exporta:
   **OpenTimelineIO, FCPXML, EDL**. O formato `.drp` não é suportado.
 
@@ -33,7 +35,7 @@ tempo real (via proxy quando necessário) e exportar sem crash.
 
 | # | Subprojeto | Observação |
 |---|---|---|
-| 0 | Inventário (REA + manual) | gera `docs/inventory/` — requisitos por página |
+| 0 | Decomposição clean-room do Resolve | gera `docs/inventory/` + testes de comportamento (seção 3.1) |
 | 1 | **Núcleo + Edit** | este documento |
 | 2 | Estúdio IA | spec própria; primeiro provedor **fal.ai** |
 | 3 | Color | nós de cor, OpenColorIO, scopes |
@@ -43,7 +45,26 @@ tempo real (via proxy quando necessário) e exportar sem crash.
 
 Cada subprojeto tem ciclo próprio: spec → plano → implementação.
 
-### 3.1 Estúdio IA (resumo das decisões, detalhado em spec futura)
+### 3.1 Subprojeto 0 — Decomposição clean-room do Resolve
+
+Objetivo: entender como o Resolve funciona e medir o quanto nos aproximamos dele, por
+quatro frentes, sem copiar código:
+
+1. **Mapa estrutural (REA):** módulos/DLLs, imports/exports, grafo de dependências,
+   bibliotecas de terceiros embutidas → como ele se divide em subsistemas.
+2. **Inventário via API de scripting (Python/Lua):** todas as ferramentas do Fusion com
+   parâmetros, tipos, padrões e faixas; presets de render; codecs → `docs/inventory/`.
+3. **Formatos e comportamento em disco:** caches, proxies, optimized media, estrutura do
+   banco de projeto → organização interna e interoperabilidade.
+4. **Testes de caixa-preta (Resolve como oráculo):** nossa mídia sintética renderizada no
+   Resolve; medições (curvas de cor, curva de transições, quadro exato de cortes/trims)
+   viram testes que o MCS AI Editor deve passar.
+
+Saídas: documentos de requisitos e medições numéricas. Nenhum arquivo da instalação do
+Resolve vai para o repo. Frentes 2 e 4 exigem Resolve instalado e licenciado na máquina
+do analista. Roda em paralelo aos marcos do Subprojeto 1; a frente 4 alimenta v0.4+.
+
+### 3.2 Estúdio IA (resumo das decisões, detalhado em spec futura)
 
 - O software **gera os vídeos ele mesmo**, chamando os modelos diretamente com a **chave
   de API do próprio usuário** (BYOK). Não depende do Higgsfield.
