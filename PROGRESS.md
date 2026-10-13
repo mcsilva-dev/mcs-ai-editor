@@ -4,9 +4,9 @@ Spec: [docs/superpowers/specs/2026-10-13-mcs-ai-editor-design.md](docs/superpowe
 
 ## Estado atual
 
-- **Fase:** v0.2.0 concluído (Subprojeto 1 — Núcleo + Edit)
-- **Próximo passo:** plano do v0.3 (timeline multi-trilha + playback com áudio sincronizado)
-- **Último plano:** [docs/superpowers/plans/2026-10-13-v0.2-media-pool.md](docs/superpowers/plans/2026-10-13-v0.2-media-pool.md)
+- **Fase:** v0.3.0 concluído (Subprojeto 1 — Núcleo + Edit)
+- **Próximo passo:** plano do v0.4 (edição básica: corte, mover, blade, undo/redo)
+- **Último plano:** [docs/superpowers/plans/2026-10-13-v0.3-playback.md](docs/superpowers/plans/2026-10-13-v0.3-playback.md)
 - **Repositório:** https://github.com/mcsilva-dev/mcs-ai-editor (main protegida: PR + CI verde)
 
 ## Histórico
@@ -64,3 +64,16 @@ Spec: [docs/superpowers/specs/2026-10-13-mcs-ai-editor-design.md](docs/superpowe
   - Qt só entrega Drop ao widget que aceitou o DragEnter (testes devem enviar os dois).
   - Com 20 núcleos o decoder em threads só solta quadros no esvaziamento final (normal).
   - CI roda duas vezes (push + pull_request) para o mesmo código: melhoria futura.
+
+### 2026-10-13 — v0.3.0 (timeline + playback sincronizado)
+- Feito: modelo de timeline (V1/A1, append ligado, conversões quadro↔amostra); `AudioDecoder`
+  (estéreo float 48 kHz); `FrameDecoder` sequencial sem seek; `mcs_playback` (TimelineVideo,
+  TimelineAudio, PlaybackEngine com buffer circular SPSC e áudio como relógio, AudioOutput com
+  miniaudio, Player com relógio de fallback); UI com timeline, viewer de programa, Shift+F12 e Espaço.
+- Decisões (Miguel): miniaudio no lugar do QAudioSink; GPU/QRhi no v0.6; decode HW no v0.8.
+- Verificado: ctest 14/14; sincronia A/V de 10 min em tempo virtual (1,2 s de teste); playback real
+  no backend nulo do miniaudio; exe roda com PATH limpo.
+- Observações/armadilhas:
+  - Decode em várias threads: o decoder entra em "esvaziamento" ~19 quadros antes do fim do
+    arquivo e ainda solta quadros — só EOF exige seek (antes: 15 seeks em 60 quadros sequenciais).
+  - Áudio sintético dos testes é uma rampa por amostra: prova amostra exata no mixer e no motor.

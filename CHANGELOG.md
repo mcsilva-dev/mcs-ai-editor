@@ -5,6 +5,19 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.3.0] - 2026-10-13
+
+### Adicionado
+- Timeline com trilhas V1/A1: append no fim por duplo clique no Media Pool ou Shift+F12.
+- Playback com o áudio como relógio mestre (miniaudio): Espaço = play/pause; clique/arrasto
+  na timeline = seek; viewer de programa com timecode.
+- Decode de áudio para estéreo 48 kHz; decode de vídeo sequencial sem seek.
+- Teste de sincronia A/V de 10 minutos (tempo virtual) e playback real no dispositivo simulado.
+
+### Mudado
+- Saída de áudio: miniaudio no lugar do QAudioSink; viewer na GPU passa ao v0.6 e decode por
+  hardware ao v0.8 (spec atualizada).
+
 ## [0.2.0] - 2026-10-13
 
 ### Adicionado
