@@ -28,6 +28,10 @@ target_link_libraries(mcs_media PUBLIC mcs_core Qt6::Gui ${FFMPEG_LIBRARIES} PRI
 add_library(mcs_playback STATIC
     playback/timeline_video.h
     playback/timeline_video.cpp
+    playback/timeline_audio.h
+    playback/timeline_audio.cpp
+    playback/playback_engine.h
+    playback/playback_engine.cpp
 )
 target_include_directories(mcs_playback PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mcs_playback PUBLIC mcs_media PRIVATE mcs_warnings)
