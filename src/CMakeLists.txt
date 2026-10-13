@@ -26,10 +26,12 @@ add_library(mcs_ui STATIC
     ui/theme.cpp
     ui/main_window.h
     ui/main_window.cpp
+    ui/media_pool_model.h
+    ui/media_pool_model.cpp
 )
 target_include_directories(mcs_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(mcs_ui PUBLIC MCS_VERSION="${PROJECT_VERSION}")
-target_link_libraries(mcs_ui PUBLIC Qt6::Widgets PRIVATE mcs_warnings)
+target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media PRIVATE Qt6::Concurrent mcs_warnings)
 
 qt_add_executable(mcs_ai_editor WIN32 MACOSX_BUNDLE app/main.cpp)
 target_link_libraries(mcs_ai_editor PRIVATE mcs_ui mcs_media mcs_warnings)
