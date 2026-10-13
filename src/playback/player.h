@@ -28,6 +28,8 @@ class Player : public QObject {
     void seek(std::int64_t frame);
     std::int64_t currentFrame() const;
     bool usingFallbackClock() const;
+    // Para testes: simula a perda do dispositivo de áudio durante o playback.
+    void simulateAudioDeviceLoss();
 
   signals:
     void playingChanged(bool playing);
@@ -41,8 +43,10 @@ class Player : public QObject {
     std::thread feeder_;
     std::atomic<bool> feeding_{false};
     bool playing_ = false;
-    bool fallback_ = false;
-    QElapsedTimer fallbackTimer_;
+    // Fallback pode ser ligado dentro de currentFrame() (perda do dispositivo); só na thread da UI.
+    mutable bool fallback_ = false;
+    mutable QElapsedTimer fallbackTimer_;
+    mutable std::int64_t fallbackBase_ = 0;
     std::int64_t pausedFrame_ = 0;
 };
 

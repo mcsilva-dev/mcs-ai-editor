@@ -23,6 +23,10 @@ class AudioOutput {
     void stop();
     bool isRunning() const;
     int latencyFrames() const;
+    // true se o dispositivo parou sem pedirmos (fone desconectado, backend caiu).
+    bool deviceLost() const;
+    // Para testes: para o dispositivo "por fora", como um fone desconectado.
+    void simulateDeviceLoss();
 
   private:
     struct Impl;

@@ -141,6 +141,18 @@ class TstDecoder : public QObject {
     }
 
     // Avançar quadro a quadro não faz seek (essencial para o playback).
+    // Clipe mais lento que a timeline (24p em 25p) pede o mesmo quadro duas vezes: sem seek.
+    void repeatedIndexDoesNotSeek() {
+        mcs::media::FrameDecoder d;
+        QVERIFY(d.open(video_));
+        checkFrame(d, 10);
+        checkFrame(d, 10);
+        checkFrame(d, 11);
+        checkFrame(d, 11);
+        checkFrame(d, 12);
+        QCOMPARE(d.seekCount(), 1);
+    }
+
     void sequentialReadsDoNotSeek() {
         mcs::media::FrameDecoder d;
         QVERIFY(d.open(video_));

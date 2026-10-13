@@ -21,6 +21,8 @@ struct SynthSpec {
     // Reproduz arquivos com edit list mais curta que as amostras (ex.: clipe cortado no celular):
     // o último quadro fica fora da edição e o demuxer o descarta.
     bool omitPacketDuration = false;
+    // Áudio começa N amostras depois do vídeo (gravações de OBS, câmeras, MPEG-TS).
+    int audioDelaySamples = 0;
 };
 
 // Luma (faixa limitada 16..235) gravado no quadro k.

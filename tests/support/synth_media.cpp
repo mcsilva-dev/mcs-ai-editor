@@ -238,7 +238,7 @@ QString writeSynthMov(const QString& path, const SynthSpec& s) {
                 av_samples_set_silence(f->data, 0, audioChunk, ac->ch_layout.nb_channels,
                                        ac->sample_fmt);
             }
-            f->pts = audioPts;
+            f->pts = audioPts + s.audioDelaySamples; // conteúdo segue a rampa a partir de 0
             audioPts += audioChunk;
             if (avcodec_send_frame(ac, f) < 0 || !drain(ac, as)) {
                 return QStringLiteral("encode de áudio falhou no quadro %1").arg(k);

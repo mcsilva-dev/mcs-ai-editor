@@ -55,6 +55,23 @@ class TstPlayer : public QObject {
         p.pause();
     }
 
+    // Review Focus 2: fone desconectado no meio do playback — a imagem não pode congelar.
+    void deviceLossFallsBackToSystemClock() {
+        Player p;
+        p.setAudioBackend(AudioOutput::Backend::Null);
+        p.setTimeline(timeline_);
+        p.play();
+        QTest::qWait(200);
+        p.simulateAudioDeviceLoss();
+        const std::int64_t before = p.currentFrame();
+        QTest::qWait(400);
+        const std::int64_t after = p.currentFrame();
+        QVERIFY2(after >= before + 5,
+                 qPrintable(QStringLiteral("%1 -> %2").arg(before).arg(after)));
+        QVERIFY(p.usingFallbackClock());
+        p.pause();
+    }
+
     // Review Focus 5
     void seekWhilePlayingRepositions() {
         Player p;

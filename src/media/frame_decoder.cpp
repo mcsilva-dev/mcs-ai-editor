@@ -28,6 +28,10 @@ struct FrameDecoder::Impl {
     bool drained = false;        // fim do arquivo lido: decoder esvaziando (ainda solta quadros)
     bool exhausted = false;      // decoder respondeu EOF: não há mais quadros sem seek
     std::int64_t seeks = 0;
+    // Último quadro entregue e o pedido que o gerou: pedidos em [lastRequest, lastIndex]
+    // (quadro repetido em clipe mais lento que a timeline, ou VFR) reusam a imagem, sem seek.
+    std::optional<DecodedFrame> last;
+    std::int64_t lastRequest = -1;
 
     ~Impl() {
         sws_freeContext(sws);
@@ -126,6 +130,10 @@ std::optional<DecodedFrame> FrameDecoder::frameAt(std::int64_t index) {
         return std::nullopt;
     }
     Impl& s = *d_;
+    if (s.last && index >= s.lastRequest && index <= s.lastIndex) {
+        return s.last;
+    }
+    s.last.reset();
     // Avanço curto a partir do último quadro: continua decodificando, sem seek.
     constexpr std::int64_t kForwardWindow = 30;
     const bool sequential = s.lastIndex >= 0 && !s.exhausted && index > s.lastIndex &&
@@ -160,6 +168,8 @@ std::optional<DecodedFrame> FrameDecoder::frameAt(std::int64_t index) {
                     return std::nullopt;
                 }
                 s.lastIndex = got;
+                s.lastRequest = index;
+                s.last = out;
                 return out;
             }
             av_frame_unref(s.frame);

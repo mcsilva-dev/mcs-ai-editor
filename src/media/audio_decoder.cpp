@@ -1,5 +1,7 @@
 #include "media/audio_decoder.h"
 
+#include "media/ffmpeg_util.h"
+
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <algorithm>
@@ -138,6 +140,13 @@ bool AudioDecoder::open(const QString& path, QString* error) {
         return fail("Cannot convert the audio of \"%1\".");
     }
     d_->startPts = d_->st->start_time != AV_NOPTS_VALUE ? d_->st->start_time : 0;
+    // Com vídeo no arquivo, a amostra 0 é o início do vídeo: áudio que começa depois (ou antes)
+    // mantém o deslocamento e o lip-sync fica certo.
+    const int video = detail::videoStreamOf(d_->fmt);
+    if (video >= 0 && d_->fmt->streams[video]->start_time != AV_NOPTS_VALUE) {
+        const AVStream* vs = d_->fmt->streams[video];
+        d_->startPts = av_rescale_q(vs->start_time, vs->time_base, d_->st->time_base);
+    }
     if (d_->st->duration != AV_NOPTS_VALUE) {
         d_->length = av_rescale_q(d_->st->duration, d_->st->time_base, AVRational{1, kSampleRate});
     } else if (d_->fmt->duration != AV_NOPTS_VALUE) {

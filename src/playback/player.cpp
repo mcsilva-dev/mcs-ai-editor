@@ -28,6 +28,7 @@ void Player::play() {
     engine_.fillAhead(); // buffer cheio antes do primeiro callback
     fallback_ = !output_.start(backend_);
     if (fallback_) {
+        fallbackBase_ = pausedFrame_;
         fallbackTimer_.start();
     } else {
         feeding_.store(true);
@@ -77,15 +78,25 @@ std::int64_t Player::currentFrame() const {
     if (!playing_) {
         return pausedFrame_;
     }
+    if (!fallback_ && output_.deviceLost()) {
+        // Dispositivo sumiu no meio do playback: segue pelo relógio do sistema a partir daqui.
+        fallbackBase_ = engine_.currentFrame();
+        fallbackTimer_.start();
+        fallback_ = true;
+    }
     if (fallback_) {
         const core::Rational fps = engine_.fps();
-        return pausedFrame_ + fallbackTimer_.elapsed() * fps.num / (1000 * fps.den);
+        return fallbackBase_ + fallbackTimer_.elapsed() * fps.num / (1000 * fps.den);
     }
     return engine_.currentFrame();
 }
 
 bool Player::usingFallbackClock() const {
     return playing_ && fallback_;
+}
+
+void Player::simulateAudioDeviceLoss() {
+    output_.simulateDeviceLoss();
 }
 
 } // namespace mcs::playback

@@ -106,6 +106,25 @@ class TstAudioDecoder : public QObject {
         QCOMPARE(buf[0], 0.0f);
     }
 
+    // Áudio que começa 100 ms depois do vídeo: a amostra 0 é alinhada ao quadro 0 do vídeo.
+    void audioStartingAfterVideoIsDelayed() {
+        const QString path = dir_.filePath(QStringLiteral("audio_atrasado.mov"));
+        mcs::test::SynthSpec s;
+        s.audioDelaySamples = 4800;
+        QCOMPARE(mcs::test::writeSynthMov(path, s), QString());
+        AudioDecoder d;
+        QVERIFY(d.open(path));
+        std::vector<float> buf(2 * 6000);
+        d.read(0, buf.data(), 6000);
+        for (int i = 0; i < 4800; i += 50) {
+            QVERIFY2(qAbs(buf[2 * i]) < 1e-4f, qPrintable(QStringLiteral("amostra %1").arg(i)));
+        }
+        for (int i = 4800; i < 6000; ++i) {
+            QVERIFY2(qAbs(buf[2 * i] - mcs::test::expectedSampleAt(i - 4800)) < 1e-4f,
+                     qPrintable(QStringLiteral("amostra %1").arg(i)));
+        }
+    }
+
     void accentedPath() {
         const QString sub = dir_.filePath(QStringLiteral("pasta com espaço ção"));
         QVERIFY(QDir().mkpath(sub));
