@@ -25,6 +25,14 @@ target_include_directories(mcs_media SYSTEM PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(mcs_media PUBLIC ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(mcs_media PUBLIC mcs_core Qt6::Gui ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
 
+# miniaudio compilado à parte, sem as flags de aviso-como-erro do projeto (código de terceiros).
+add_library(mcs_miniaudio STATIC playback/miniaudio_impl.cpp)
+target_include_directories(mcs_miniaudio SYSTEM PUBLIC ${MINIAUDIO_INCLUDE_DIR})
+target_link_libraries(mcs_miniaudio PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
+if(UNIX)
+    target_link_libraries(mcs_miniaudio PUBLIC m) # sin/pow etc. ficam na libm no Linux
+endif()
+
 add_library(mcs_playback STATIC
     playback/timeline_video.h
     playback/timeline_video.cpp
@@ -32,9 +40,13 @@ add_library(mcs_playback STATIC
     playback/timeline_audio.cpp
     playback/playback_engine.h
     playback/playback_engine.cpp
+    playback/audio_output.h
+    playback/audio_output.cpp
+    playback/player.h
+    playback/player.cpp
 )
 target_include_directories(mcs_playback PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(mcs_playback PUBLIC mcs_media PRIVATE mcs_warnings)
+target_link_libraries(mcs_playback PUBLIC mcs_media Qt6::Core PRIVATE mcs_miniaudio mcs_warnings)
 
 add_library(mcs_ui STATIC
     ui/theme.h
