@@ -31,6 +31,9 @@ endif()
 
 add_test(NAME app_starts COMMAND mcs_ai_editor --smoke)
 # No Windows usa a plataforma normal: windeployqt copia só o plugin qwindows, não o offscreen.
-if(NOT WIN32)
+if(WIN32)
+    # PATH só com System32: o teste prova o deploy (windeployqt), não um Qt achado no PATH.
+    set_tests_properties(app_starts PROPERTIES ENVIRONMENT "PATH=$ENV{SystemRoot}\\System32")
+else()
     set_tests_properties(app_starts PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
