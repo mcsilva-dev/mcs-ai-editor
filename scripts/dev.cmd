@@ -9,5 +9,7 @@ if not defined VSDIR (
 )
 if not defined VCPKG_ROOT set "VCPKG_ROOT=%VSDIR%\VC\vcpkg"
 if not defined QT_ROOT_DIR set "QT_ROOT_DIR=C:\Qt\6.11.3\msvc2022_64"
+rem vcvars64 chama vswhere.exe pelo nome; sem isto ele imprime "nao reconhecido".
+set "PATH=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer;%PATH%"
 call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat" >nul || exit /b 1
 %*
