@@ -4,9 +4,10 @@ Spec: [docs/superpowers/specs/2026-10-13-mcs-ai-editor-design.md](docs/superpowe
 
 ## Estado atual
 
-- **Fase:** v0.1.0 concluído (Subprojeto 1 — Núcleo + Edit)
-- **Próximo passo:** plano do v0.2 (importar mídia + Media Pool + viewer com decode)
-- **Último plano:** [docs/superpowers/plans/2026-10-13-v0.1-esqueleto.md](docs/superpowers/plans/2026-10-13-v0.1-esqueleto.md)
+- **Fase:** v0.2.0 concluído (Subprojeto 1 — Núcleo + Edit)
+- **Próximo passo:** plano do v0.3 (timeline multi-trilha + playback com áudio sincronizado)
+- **Último plano:** [docs/superpowers/plans/2026-10-13-v0.2-media-pool.md](docs/superpowers/plans/2026-10-13-v0.2-media-pool.md)
+- **Repositório:** https://github.com/mcsilva-dev/mcs-ai-editor (main protegida: PR + CI verde)
 
 ## Histórico
 
@@ -44,3 +45,22 @@ Spec: [docs/superpowers/specs/2026-10-13-mcs-ai-editor-design.md](docs/superpowe
   - `qt_standard_project_setup` põe todos os .exe em `build/<preset>/`; o windeployqt do app
     copia o Qt para lá, por isso os testes definem `QT_PLUGIN_PATH`.
   - Folha de estilo global (`QApplication::setStyleSheet`) embrulha o estilo do app; usar só no widget.
+
+### 2026-10-13 — Publicação e CI
+- Repositório público criado; e-mail dos commits trocado para o noreply do GitHub antes do 1º push.
+- 1º CI: macOS, Linux (ASan) e formatação verdes; Windows falhou porque o `msvc-dev-cmd`
+  exporta `VCPKG_ROOT` do Visual Studio. Corrigido no PR #1 (Windows usa o vcpkg do VS).
+- `main` protegida (PR obrigatório, 4 checks obrigatórios, sem force push), valendo para admin.
+
+### 2026-10-13 — v0.2.0 (import, Media Pool, viewer)
+- Feito: `mcs_core` (racional, timecode, MediaInfo); `probe` com metadados de cor; `FrameDecoder`
+  com seek exato; `MediaPoolModel` (duplicados, erros, thumbnails via QtConcurrent); página Edit
+  com Media Pool, viewer de fonte (QPainter), Ctrl+I e arrastar-e-soltar.
+- Verificado: build limpo em 26 s; `ctest` 8/8; exe roda com PATH limpo.
+- Observações/armadilhas:
+  - Gerador sintético: o encoder mpeg4 transforma todo quadro em keyframe (detecção de corte de
+    cena) → `sc_threshold` alto; e a duração precisa ir no pacote, senão o .mov descarta o último
+    quadro (edit list). Teste `synthHasAllFramesAndRealGop` protege isso (60 pacotes, 5 keyframes).
+  - Qt só entrega Drop ao widget que aceitou o DragEnter (testes devem enviar os dois).
+  - Com 20 núcleos o decoder em threads só solta quadros no esvaziamento final (normal).
+  - CI roda duas vezes (push + pull_request) para o mesmo código: melhoria futura.
