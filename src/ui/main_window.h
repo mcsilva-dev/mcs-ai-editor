@@ -8,6 +8,8 @@ class QStackedWidget;
 
 namespace mcs::ui {
 
+class MediaPoolModel;
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
   public:
@@ -18,9 +20,15 @@ class MainWindow : public QMainWindow {
     // Troca para a página; nomes desconhecidos são ignorados.
     void showPage(const QString& name);
 
-  private:
-    void addPage(const QString& name, const QString& label);
+    MediaPoolModel* mediaPool() const;
+    // Importa e mostra um aviso com os erros, se houver.
+    void importAndReport(const QStringList& paths);
 
+  private:
+    void addPage(const QString& name, const QString& label, QWidget* page);
+    void createMenus();
+
+    MediaPoolModel* pool_ = nullptr;
     QStackedWidget* pages_ = nullptr;
     QButtonGroup* pageButtons_ = nullptr;
     QWidget* pageBar_ = nullptr;

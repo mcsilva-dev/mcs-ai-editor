@@ -1,6 +1,7 @@
 #include "ui/main_window.h"
 #include "ui/theme.h"
 
+#include <QAction>
 #include <QApplication>
 #include <QStyle>
 #include <QToolButton>
@@ -38,6 +39,14 @@ class TstMainWindow : public QObject {
         mcs::ui::MainWindow w;
         w.showPage(QStringLiteral("nao_existe"));
         QCOMPARE(w.currentPage(), QStringLiteral("edit"));
+    }
+
+    void importActionHasShortcut() {
+        mcs::ui::MainWindow w;
+        auto* action = w.findChild<QAction*>(QStringLiteral("action_importMedia"));
+        QVERIFY(action);
+        QCOMPARE(action->shortcut(), QKeySequence(QStringLiteral("Ctrl+I")));
+        QVERIFY(w.mediaPool());
     }
 
     // Review Focus 4: tema escuro independente do tema do Windows.

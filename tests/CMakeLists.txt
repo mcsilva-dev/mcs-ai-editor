@@ -26,3 +26,4 @@ target_link_libraries(mcs_test_support PUBLIC Qt6::Core ${FFMPEG_LIBRARIES} PRIV
 mcs_add_test(tst_probe mcs_media mcs_test_support)
 mcs_add_test(tst_decoder mcs_media mcs_test_support)
 mcs_add_test(tst_mediapool mcs_ui mcs_test_support)
+mcs_add_test(tst_editpage mcs_ui mcs_test_support)

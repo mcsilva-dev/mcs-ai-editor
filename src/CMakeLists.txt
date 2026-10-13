@@ -28,6 +28,12 @@ add_library(mcs_ui STATIC
     ui/main_window.cpp
     ui/media_pool_model.h
     ui/media_pool_model.cpp
+    ui/frame_view.h
+    ui/frame_view.cpp
+    ui/source_viewer.h
+    ui/source_viewer.cpp
+    ui/edit_page.h
+    ui/edit_page.cpp
 )
 target_include_directories(mcs_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(mcs_ui PUBLIC MCS_VERSION="${PROJECT_VERSION}")

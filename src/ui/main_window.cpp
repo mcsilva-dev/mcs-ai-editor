@@ -1,8 +1,15 @@
 #include "ui/main_window.h"
 
+#include "ui/edit_page.h"
+#include "ui/media_pool_model.h"
+
+#include <QAction>
 #include <QButtonGroup>
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMenuBar>
+#include <QMessageBox>
 #include <QStackedWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -33,17 +40,25 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     layout->addWidget(pageBar_);
     setCentralWidget(central);
 
-    addPage(QStringLiteral("edit"), tr("Edit"));
-    addPage(QStringLiteral("deliver"), tr("Deliver"));
+    pool_ = new MediaPoolModel(this);
+    auto* editPage = new EditPage(pool_, pages_);
+    connect(editPage, &EditPage::importFailed, this, [this](const QStringList& errors) {
+        QMessageBox::warning(this, tr("Import Media"), errors.join(QLatin1Char('\n')));
+    });
+
+    addPage(QStringLiteral("edit"), tr("Edit"), editPage);
+    addPage(QStringLiteral("deliver"), tr("Deliver"), new QLabel(tr("Deliver"), pages_));
     barLayout->addStretch();
+    createMenus();
 
     showPage(QStringLiteral("edit"));
 }
 
-void MainWindow::addPage(const QString& name, const QString& label) {
-    auto* page = new QLabel(label, pages_);
+void MainWindow::addPage(const QString& name, const QString& label, QWidget* page) {
     page->setObjectName(QStringLiteral("page_") + name);
-    page->setAlignment(Qt::AlignCenter);
+    if (auto* text = qobject_cast<QLabel*>(page)) {
+        text->setAlignment(Qt::AlignCenter);
+    }
     pages_->addWidget(page);
 
     auto* button = new QToolButton(pageBar_);
@@ -73,6 +88,31 @@ void MainWindow::showPage(const QString& name) {
     }
     pages_->setCurrentIndex(static_cast<int>(index));
     pageButtons_->button(static_cast<int>(index))->setChecked(true);
+}
+
+void MainWindow::createMenus() {
+    auto* file = menuBar()->addMenu(tr("&File"));
+    auto* import = file->addAction(tr("&Import Media..."));
+    import->setObjectName(QStringLiteral("action_importMedia"));
+    import->setShortcut(QKeySequence(QStringLiteral("Ctrl+I")));
+    connect(import, &QAction::triggered, this, [this] {
+        const QStringList paths = QFileDialog::getOpenFileNames(
+            this, tr("Import Media"), {},
+            tr("Media (*.mov *.mp4 *.mkv *.avi *.mxf *.webm *.m4v *.wav *.mp3 *.m4a *.aac "
+               "*.flac);;All files (*)"));
+        importAndReport(paths);
+    });
+}
+
+MediaPoolModel* MainWindow::mediaPool() const {
+    return pool_;
+}
+
+void MainWindow::importAndReport(const QStringList& paths) {
+    const QStringList errors = pool_->importFiles(paths);
+    if (!errors.isEmpty()) {
+        QMessageBox::warning(this, tr("Import Media"), errors.join(QLatin1Char('\n')));
+    }
 }
 
 } // namespace mcs::ui
