@@ -112,8 +112,8 @@ void MainWindow::showPage(const QString& name) {
 
 void MainWindow::createMenus() {
     auto* file = menuBar()->addMenu(tr("&File"));
-    auto addAction = [this](QMenu* menu, const QString& name, const QString& text,
-                            const QKeySequence& key) {
+    auto addAction = [](QMenu* menu, const QString& name, const QString& text,
+                        const QKeySequence& key) {
         QAction* action = menu->addAction(text);
         action->setObjectName(QStringLiteral("action_") + name);
         action->setShortcut(key);

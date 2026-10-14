@@ -9,7 +9,7 @@ using mcs::test::parseTimeline;
 
 namespace {
 // "B+b" = ids dos clipes B e b (a seleção chega pronta; as operações não expandem).
-QSet<QUuid> select(const mcs::core::Timeline& t, const QString& names) {
+QSet<QUuid> selectIds(const mcs::core::Timeline& t, const QString& names) {
     QSet<QUuid> ids;
     for (const QString& name : names.split(QLatin1Char('+'), Qt::SkipEmptyParts)) {
         ids.unite(idsOf(t, name));
@@ -80,7 +80,7 @@ class TstEditOps : public QObject {
         QFETCH(QString, select);
         QFETCH(QString, expected);
         const auto t = parseTimeline(before);
-        checkResult(mcs::core::lift(t, ::select(t, select)), expected);
+        checkResult(mcs::core::lift(t, selectIds(t, select)), expected);
     }
 
     void rippleDelete_data() {
@@ -105,7 +105,7 @@ class TstEditOps : public QObject {
         QFETCH(QString, select);
         QFETCH(QString, expected);
         const auto t = parseTimeline(before);
-        checkResult(mcs::core::rippleDelete(t, ::select(t, select)), expected);
+        checkResult(mcs::core::rippleDelete(t, selectIds(t, select)), expected);
     }
 
     void overwrite_data() {
@@ -184,7 +184,7 @@ class TstEditOps : public QObject {
         QFETCH(qint64, delta);
         QFETCH(QString, expected);
         const auto t = parseTimeline(before);
-        const auto r = mcs::core::moveClips(t, ::select(t, select), delta);
+        const auto r = mcs::core::moveClips(t, selectIds(t, select), delta);
         QVERIFY2(r.timeline, qPrintable(r.error));
         QCOMPARE(formatTimeline(*r.timeline), expected);
     }
@@ -208,7 +208,7 @@ class TstEditOps : public QObject {
 
     void adjustGainOnlyTouchesAudioWithinRange() {
         const auto t = parseTimeline("V1: A[0..10) | A1: a[0..10)");
-        const QSet<QUuid> both = select(t, QStringLiteral("A+a"));
+        const QSet<QUuid> both = selectIds(t, QStringLiteral("A+a"));
         auto r = mcs::core::adjustGain(t, both, -6.0);
         QVERIFY2(r.timeline, qPrintable(r.error));
         QCOMPARE(r.timeline->audio[0].clips[0].gainDb, -6.0);
@@ -217,7 +217,7 @@ class TstEditOps : public QObject {
         QCOMPARE(r.timeline->audio[0].clips[0].gainDb, mcs::core::kMinGainDb);
         r = mcs::core::adjustGain(*r.timeline, both, +500.0);
         QCOMPARE(r.timeline->audio[0].clips[0].gainDb, mcs::core::kMaxGainDb);
-        QVERIFY(!mcs::core::adjustGain(t, select(t, QStringLiteral("A")), -1.0).timeline);
+        QVERIFY(!mcs::core::adjustGain(t, selectIds(t, QStringLiteral("A")), -1.0).timeline);
     }
 
     // Revisão final I3: aparar só o começo mantém id e link (o par vídeo/áudio continua ligado).
