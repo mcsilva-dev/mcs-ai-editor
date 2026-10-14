@@ -56,6 +56,8 @@ class MainWindow : public QMainWindow {
     EditPage* editPage_ = nullptr;
     QString projectPath_;
     QStringList warnings_;
+    // Mídias do projeto aberto que não foram encontradas: continuam no arquivo ao salvar.
+    QStringList missingMedia_;
     QTimer* autosave_ = nullptr;
 
     MediaPoolModel* pool_ = nullptr;

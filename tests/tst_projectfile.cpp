@@ -85,6 +85,50 @@ class TstProjectFile : public QObject {
         QVERIFY(r.error.contains(QStringLiteral("newer")));
     }
 
+    // Revisão final I1: JSON editado à mão com clipe inválido (fps 0 derrubava o playback).
+    void invalidClipsAreRejected_data() {
+        QTest::addColumn<int>("kind");
+        QTest::newRow("sourceFps zero") << 0;
+        QTest::newRow("duração zero") << 1;
+        QTest::newRow("início negativo") << 2;
+        QTest::newRow("clipes sobrepostos") << 3;
+        QTest::newRow("id repetido") << 4;
+    }
+
+    void invalidClipsAreRejected() {
+        QFETCH(int, kind);
+        Project p = sample();
+        auto& clips = p.timeline.video[0].clips;
+        switch (kind) {
+        case 0:
+            clips[0].sourceFps = {0, 1};
+            break;
+        case 1:
+            clips[0].duration = 0;
+            break;
+        case 2:
+            clips[0].start = -5;
+            break;
+        case 3:
+            clips[1].start = 15;
+            break;
+        default:
+            clips[1].id = clips[0].id;
+            break;
+        }
+        const auto r = mcs::core::projectFromJson(mcs::core::projectToJson(p));
+        QVERIFY(!r.project);
+        QVERIFY(!r.error.isEmpty());
+    }
+
+    void gainIsClampedOnLoad() {
+        Project p = sample();
+        p.timeline.audio[0].clips[0].gainDb = 50.0;
+        const auto r = mcs::core::projectFromJson(mcs::core::projectToJson(p));
+        QVERIFY2(r.project, qPrintable(r.error));
+        QCOMPARE(r.project->timeline.audio[0].clips[0].gainDb, 12.0);
+    }
+
     void missingFileIsAnError() {
         const auto r = mcs::core::loadProject(dir_.filePath(QStringLiteral("nao_existe.mcsproj")));
         QVERIFY(!r.project);

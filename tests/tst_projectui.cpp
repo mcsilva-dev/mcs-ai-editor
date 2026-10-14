@@ -91,6 +91,10 @@ class TstProjectUi : public QObject {
         QCOMPARE(w2.lastWarnings().size(), 1);
         QVERIFY(w2.lastWarnings().first().contains(QStringLiteral("some.mov")));
         QCOMPARE(w2.editPage()->timeline().video[0].clips.size(), size_t(1));
+        // Revisão final I2: salvar não pode apagar a mídia ausente da lista do projeto.
+        const QString resaved = dir_.filePath(QStringLiteral("p3b.mcsproj"));
+        QCOMPARE(w2.saveProjectTo(resaved), QString());
+        QVERIFY(mcs::core::loadProject(resaved).project->media.contains(copy));
     }
 
     void autosaveWritesLoadableFile() {

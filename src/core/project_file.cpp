@@ -1,5 +1,7 @@
 #include "core/project_file.h"
 
+#include "core/edit_ops.h"
+
 #include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
@@ -7,6 +9,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
+#include <QSet>
+#include <algorithm>
+#include <cmath>
 
 namespace mcs::core {
 
@@ -74,6 +79,30 @@ std::vector<Track> tracksFromJson(const QJsonValue& value) {
     return tracks;
 }
 
+// Arquivo pode ter sido editado à mão: ordena as trilhas e recusa clipes que quebrariam a
+// edição ou o playback (fps 0 = divisão por zero no mixer). Volume fora da faixa é limitado.
+bool sanitize(Timeline& timeline) {
+    QSet<QUuid> ids;
+    for (auto* tracks : {&timeline.video, &timeline.audio}) {
+        for (Track& track : *tracks) {
+            std::sort(track.clips.begin(), track.clips.end(),
+                      [](const Clip& a, const Clip& b) { return a.start < b.start; });
+            std::int64_t end = 0;
+            for (Clip& c : track.clips) {
+                if (c.id.isNull() || ids.contains(c.id) || c.sourceFps.num <= 0 ||
+                    c.sourceFps.den <= 0 || c.duration <= 0 || c.start < end || c.sourceIn < 0) {
+                    return false;
+                }
+                ids.insert(c.id);
+                end = c.end();
+                c.gainDb =
+                    std::isfinite(c.gainDb) ? std::clamp(c.gainDb, kMinGainDb, kMaxGainDb) : 0.0;
+            }
+        }
+    }
+    return true;
+}
+
 QString backupPath(const QString& path, int n) {
     return path + QStringLiteral(".bak%1").arg(n);
 }
@@ -117,6 +146,9 @@ ProjectLoad projectFromJson(const QByteArray& json) {
     }
     p.timeline.video = tracksFromJson(timeline.value(QStringLiteral("video")));
     p.timeline.audio = tracksFromJson(timeline.value(QStringLiteral("audio")));
+    if (!sanitize(p.timeline)) {
+        return {std::nullopt, tr("This is not a valid project file (clips).")};
+    }
     return {p, {}};
 }
 

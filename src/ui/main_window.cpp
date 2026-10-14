@@ -189,7 +189,7 @@ EditPage* MainWindow::editPage() const {
 }
 
 core::Project MainWindow::currentProject() const {
-    return core::Project{pool_->paths(), editPage_->document()->timeline()};
+    return core::Project{pool_->paths() + missingMedia_, editPage_->document()->timeline()};
 }
 
 QString MainWindow::openProject(const QString& path) {
@@ -199,6 +199,13 @@ QString MainWindow::openProject(const QString& path) {
     }
     pool_->clear();
     warnings_ = pool_->importFiles(loaded.project->media);
+    missingMedia_.clear();
+    const QStringList found = pool_->paths();
+    for (const QString& m : loaded.project->media) {
+        if (!found.contains(m)) {
+            missingMedia_ << m;
+        }
+    }
     editPage_->document()->reset(loaded.project->timeline);
     projectPath_ = path;
     updateTitle();
@@ -221,6 +228,7 @@ void MainWindow::newProject() {
     editPage_->document()->reset(core::Timeline{});
     projectPath_.clear();
     warnings_.clear();
+    missingMedia_.clear();
     updateTitle();
 }
 

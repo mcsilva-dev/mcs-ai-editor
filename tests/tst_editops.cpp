@@ -220,6 +220,19 @@ class TstEditOps : public QObject {
         QVERIFY(!mcs::core::adjustGain(t, select(t, QStringLiteral("A")), -1.0).timeline);
     }
 
+    // Revisão final I3: aparar só o começo mantém id e link (o par vídeo/áudio continua ligado).
+    void trimmingHeadKeepsIdAndLink() {
+        const auto t = parseTimeline("V1: Y[0..20) | A1: y[0..20)");
+        const mcs::core::SourceRange src{QStringLiteral("S"), {25, 1}, 0, 5, true, false};
+        const auto r = mcs::core::overwrite(t, src, 0);
+        QVERIFY2(r.timeline, qPrintable(r.error));
+        QCOMPARE(formatTimeline(*r.timeline),
+                 QStringLiteral("V1: S[0..5) Y[5..20)@5 | A1: y[0..20)"));
+        const auto& y = r.timeline->video[0].clips[1];
+        QCOMPARE(y.id, t.video[0].clips[0].id);
+        QCOMPARE(y.link, t.audio[0].clips[0].link);
+    }
+
     void withLinkedExpandsSelection() {
         const auto t = parseTimeline("V1: A[0..10) | A1: a[0..10) z[10..20)");
         const auto ids = mcs::core::withLinked(t, idsOf(t, QStringLiteral("A")));

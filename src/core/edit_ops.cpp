@@ -65,8 +65,15 @@ void clearRange(Track& track, std::int64_t s, std::int64_t e, Rational fps,
             left.duration = s - c.start;
             out.push_back(left);
         }
-        if (c.end() > e) {
+        if (c.end() > e && c.start < s) {
             out.push_back(rightPart(c, e, fps, rightLinks));
+        } else if (c.end() > e) {
+            // Só a cabeça some: apara no lugar, mantendo id e link (o par continua ligado).
+            Clip trimmed = c;
+            trimmed.sourceIn = sourceFrameAt(c, e, fps);
+            trimmed.start = e;
+            trimmed.duration = c.end() - e;
+            out.push_back(trimmed);
         }
     }
     track.clips = std::move(out);
