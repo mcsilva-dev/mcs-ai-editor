@@ -4,6 +4,8 @@ add_library(mcs_core STATIC
     core/media_info.h
     core/timeline.h
     core/timeline.cpp
+    core/edit_ops.h
+    core/edit_ops.cpp
 )
 target_include_directories(mcs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mcs_core PUBLIC Qt6::Core PRIVATE mcs_warnings)

@@ -17,11 +17,13 @@ mcs_add_test(tst_toolchain mcs_media)
 mcs_add_test(tst_mainwindow mcs_ui)
 mcs_add_test(tst_rational mcs_core)
 
-add_library(mcs_test_support STATIC support/synth_media.h support/synth_media.cpp)
+add_library(mcs_test_support STATIC
+    support/synth_media.h support/synth_media.cpp
+    support/timeline_text.h support/timeline_text.cpp)
 target_include_directories(mcs_test_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(mcs_test_support SYSTEM PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(mcs_test_support PUBLIC ${FFMPEG_LIBRARY_DIRS})
-target_link_libraries(mcs_test_support PUBLIC Qt6::Core ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
+target_link_libraries(mcs_test_support PUBLIC mcs_core ${FFMPEG_LIBRARIES} PRIVATE mcs_warnings)
 
 mcs_add_test(tst_probe mcs_media mcs_test_support)
 mcs_add_test(tst_decoder mcs_media mcs_test_support)
@@ -33,3 +35,4 @@ mcs_add_test(tst_timelinevideo mcs_playback mcs_test_support)
 mcs_add_test(tst_playback mcs_playback mcs_test_support)
 mcs_add_test(tst_player mcs_playback mcs_test_support)
 mcs_add_test(tst_timelineview mcs_ui)
+mcs_add_test(tst_editops mcs_core mcs_test_support)

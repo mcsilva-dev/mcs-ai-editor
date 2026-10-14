@@ -9,8 +9,8 @@ class TstTimelineView : public QObject {
   private slots:
     void clickMovesPlayhead() {
         mcs::core::Timeline t;
-        t.video[0].clips.push_back(
-            mcs::core::Clip{QUuid::createUuid(), QStringLiteral("a.mov"), {25, 1}, 0, 60, 0});
+        t.video[0].clips.push_back(mcs::core::Clip{
+            QUuid::createUuid(), QStringLiteral("a.mov"), {25, 1}, 0, 60, 0, {}, 0.0});
         mcs::ui::TimelineView view;
         view.resize(800, 200);
         view.setTimeline(&t);
@@ -31,8 +31,8 @@ class TstTimelineView : public QObject {
         view.resize(600, 150);
         QVERIFY(!view.grab().isNull());
         mcs::core::Timeline t;
-        t.audio[0].clips.push_back(
-            mcs::core::Clip{QUuid::createUuid(), QStringLiteral("b.wav"), {25, 1}, 10, 40, 0});
+        t.audio[0].clips.push_back(mcs::core::Clip{
+            QUuid::createUuid(), QStringLiteral("b.wav"), {25, 1}, 10, 40, 0, {}, 0.0});
         view.setTimeline(&t);
         view.setPlayhead(20);
         QVERIFY(!view.grab().isNull());
