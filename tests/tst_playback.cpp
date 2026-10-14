@@ -50,6 +50,16 @@ class TstPlayback : public QObject {
         }
     }
 
+    void clipGainScalesSamples() {
+        auto t = repeatedClip(1);
+        t.audio[0].clips[0].gainDb = -6.0206; // ×0,5
+        mcs::playback::TimelineAudio audio;
+        audio.setTimeline(t);
+        std::vector<float> buf(2 * 100);
+        audio.render(1000, buf.data(), 100);
+        QVERIFY(qAbs(buf[2 * 10] - 0.5f * mcs::test::expectedSampleAt(1010)) < 1e-4f);
+    }
+
     // Review Focus 3
     void gapIsSilence() {
         auto t = repeatedClip(1);

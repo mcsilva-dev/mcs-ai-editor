@@ -108,4 +108,18 @@ void MediaPoolModel::requestThumbnail(const QUuid& id, const QString& path) {
     }));
 }
 
+QStringList MediaPoolModel::paths() const {
+    QStringList out;
+    for (const Item& it : items_) {
+        out << it.info.path;
+    }
+    return out;
+}
+
+void MediaPoolModel::clear() {
+    beginResetModel();
+    items_.clear();
+    endResetModel();
+}
+
 } // namespace mcs::ui

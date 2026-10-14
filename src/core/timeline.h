@@ -18,6 +18,8 @@ struct Clip {
     std::int64_t start = 0;
     std::int64_t duration = 0;
     std::int64_t sourceIn = 0;
+    QUuid link;          // vídeo e áudio criados juntos compartilham o valor (nulo = sem ligação)
+    double gainDb = 0.0; // volume do clipe de áudio (−60…+12 dB)
 
     std::int64_t end() const { return start + duration; }
 };

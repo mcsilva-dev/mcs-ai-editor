@@ -4,9 +4,20 @@ add_library(mcs_core STATIC
     core/media_info.h
     core/timeline.h
     core/timeline.cpp
+    core/edit_ops.h
+    core/edit_ops.cpp
+    core/project_file.h
+    core/project_file.cpp
 )
 target_include_directories(mcs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mcs_core PUBLIC Qt6::Core PRIVATE mcs_warnings)
+
+add_library(mcs_edit STATIC
+    edit/timeline_document.h
+    edit/timeline_document.cpp
+)
+target_include_directories(mcs_edit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(mcs_edit PUBLIC mcs_core Qt6::Gui PRIVATE mcs_warnings)
 
 add_library(mcs_media STATIC
     media/ffmpeg_info.h
@@ -66,7 +77,7 @@ add_library(mcs_ui STATIC
 )
 target_include_directories(mcs_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(mcs_ui PUBLIC MCS_VERSION="${PROJECT_VERSION}")
-target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media mcs_playback PRIVATE Qt6::Concurrent mcs_warnings)
+target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media mcs_playback mcs_edit PRIVATE Qt6::Concurrent mcs_warnings)
 
 qt_add_executable(mcs_ai_editor WIN32 MACOSX_BUNDLE app/main.cpp)
 target_link_libraries(mcs_ai_editor PRIVATE mcs_ui mcs_media mcs_warnings)

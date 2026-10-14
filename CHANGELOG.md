@@ -5,6 +5,19 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.4.0] - 2026-10-14
+
+### Adicionado
+- Edição: blade no playhead (B), apagar com e sem fechar a lacuna (Delete / Shift+Delete),
+  mover clipes arrastando com ímã (N liga/desliga), insert/overwrite a partir do viewer de fonte
+  com In/Out (I/O, F9/F10); vídeo e áudio ligados andam juntos, com Linked Selection
+  (Ctrl+Shift+L) para mexer só no áudio ou só no vídeo.
+- Volume por clipe de áudio: Ctrl+Alt+= / Ctrl+Alt+− (±1 dB), exibido no clipe.
+- Desfazer/refazer qualquer edição (Ctrl+Z, Ctrl+Shift+Z/Ctrl+Y).
+- Projeto: New/Open/Save/Save As (.mcsproj em JSON versionado), gravação atômica, 3 backups e
+  autosave a cada 2 minutos; mídia ausente ao abrir gera aviso sem perder a timeline.
+- Testes de edição em tabela com timelines em texto.
+
 ## [0.3.0] - 2026-10-13
 
 ### Adicionado

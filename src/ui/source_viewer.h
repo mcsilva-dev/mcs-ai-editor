@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 class QLabel;
 class QSlider;
@@ -33,8 +34,18 @@ class SourceViewer : public QWidget {
     void setPosition(std::int64_t frame);
     QImage currentFrame() const;
     QString timecodeText() const;
+    // Marcas In/Out (quadros da fonte; Out inclusivo). Somem ao abrir outra mídia.
+    void markIn();
+    void markOut();
+    void clearMarks();
+    std::optional<std::int64_t> inPoint() const;
+    std::optional<std::int64_t> outPoint() const;
 
   private:
+    void updateMarks();
+    QLabel* marks_ = nullptr;
+    std::optional<std::int64_t> in_;
+    std::optional<std::int64_t> out_;
     void showFrame(std::int64_t frame);
 
     std::unique_ptr<media::FrameDecoder> decoder_;

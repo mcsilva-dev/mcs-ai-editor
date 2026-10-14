@@ -3,6 +3,7 @@
 #include "media/audio_decoder.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace mcs::playback {
 
@@ -51,8 +52,9 @@ void TimelineAudio::render(std::int64_t position, float* out, int frames) {
             decoder->read(core::sourceSampleAt(clip, from, timeline_.fps, rate), scratch_.data(),
                           n);
             float* dst = out + (from - position) * ch;
+            const auto gain = static_cast<float>(std::pow(10.0, clip.gainDb / 20.0));
             for (int i = 0; i < n * ch; ++i) {
-                dst[i] += scratch_[static_cast<std::size_t>(i)];
+                dst[i] += gain * scratch_[static_cast<std::size_t>(i)];
             }
         }
     }

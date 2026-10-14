@@ -77,13 +77,14 @@ std::int64_t appendMedia(Timeline& timeline, const MediaInfo& info) {
         duration = std::llround(info.durationSeconds * tl.toDouble());
     }
 
+    const QUuid link = QUuid::createUuid();
     if (info.video) {
         timeline.video[0].clips.push_back(
-            Clip{QUuid::createUuid(), info.path, sourceFps, start, duration, 0});
+            Clip{QUuid::createUuid(), info.path, sourceFps, start, duration, 0, link, 0.0});
     }
     if (info.audio) {
         timeline.audio[0].clips.push_back(
-            Clip{QUuid::createUuid(), info.path, sourceFps, start, duration, 0});
+            Clip{QUuid::createUuid(), info.path, sourceFps, start, duration, 0, link, 0.0});
     }
     return start;
 }

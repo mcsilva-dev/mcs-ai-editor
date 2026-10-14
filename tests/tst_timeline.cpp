@@ -36,6 +36,14 @@ class TstTimeline : public QObject {
         QCOMPARE(t.duration(), 120);
     }
 
+    void appendMediaLinksVideoAndAudio() {
+        Timeline t;
+        appendMedia(t, videoInfo(60, {25, 1}));
+        QVERIFY(!t.video[0].clips[0].link.isNull());
+        QCOMPARE(t.video[0].clips[0].link, t.audio[0].clips[0].link);
+        QVERIFY(t.video[0].clips[0].id != t.audio[0].clips[0].id);
+    }
+
     void emptyTimelineAdoptsVideoFps() {
         Timeline t;
         appendMedia(t, videoInfo(30, {30000, 1001}));
@@ -74,14 +82,14 @@ class TstTimeline : public QObject {
     }
 
     void sourceFrameAtSameFps() {
-        Clip c{{}, {}, {25, 1}, 100, 50, 10};
+        Clip c{{}, {}, {25, 1}, 100, 50, 10, {}, 0.0};
         QCOMPARE(sourceFrameAt(c, 100, {25, 1}), 10);
         QCOMPARE(sourceFrameAt(c, 120, {25, 1}), 30);
     }
 
     // Review Focus 1
     void sourceFrameAtDifferentFps() {
-        Clip c{{}, {}, {50, 1}, 0, 50, 0};
+        Clip c{{}, {}, {50, 1}, 0, 50, 0, {}, 0.0};
         QCOMPARE(sourceFrameAt(c, 7, {25, 1}), 14);
     }
 
@@ -94,7 +102,7 @@ class TstTimeline : public QObject {
     }
 
     void sourceSampleAtFollowsClipStart() {
-        Clip c{{}, {}, {25, 1}, 60, 60, 25}; // começa no quadro 60 (115200), sourceIn 1 s
+        Clip c{{}, {}, {25, 1}, 60, 60, 25, {}, 0.0}; // começa no quadro 60 (115200), sourceIn 1 s
         QCOMPARE(sourceSampleAt(c, 115200, {25, 1}, 48000), 48000);
         QCOMPARE(sourceSampleAt(c, 115200 + 10, {25, 1}, 48000), 48010);
     }

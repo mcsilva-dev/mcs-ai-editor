@@ -42,6 +42,7 @@ tempo real (via proxy quando necessário) e exportar sem crash.
 | 4 | Fairlight | mixer, efeitos, automação de áudio |
 | 5 | Fusion | composição por nós, keying, tracking |
 | 6 | Cut | interface rápida + atalhos de IA |
+| 7 | Controle por IA (MCP) | servidor MCP no app (localhost + token) sobre o mesmo ponto único de edição (TimelineDocument); sem data — decidido 2026-10-14 |
 
 Cada subprojeto tem ciclo próprio: spec → plano → implementação.
 
@@ -217,7 +218,7 @@ periódico com backups rotativos.
 | v0.1 | Esqueleto: CMake + Qt + FFmpeg, janela, CI Win/Linux/mac | build verde nos 3 SOs |
 | v0.2 | Importar mídia + Media Pool + viewer com decode | testes de probe/decode com mídia sintética |
 | v0.3 | Timeline multi-trilha + playback com áudio sincronizado (viewer CPU) | drift A/V < 1 quadro em 10 min (tempo virtual) + playback real no backend nulo |
-| v0.4 | Edição básica: corte, mover, blade, undo/redo | testes de operação em tabela |
+| v0.4 | Edição básica: blade, lift/delete, ripple delete, mover com ímã, insert/overwrite com In/Out, undo/redo; salvar/abrir projeto (.mcsproj) com autosave e backups | testes de operação em tabela; ida e volta do arquivo de projeto |
 | v0.5 | Trims avançados: ripple, roll, slip, slide, JKL | testes de operação em tabela |
 | v0.6 | Inspector + keyframes; viewers e composição na GPU (QRhi) | testes de interpolação + golden render |
 | v0.7 | Transições + títulos + fades de áudio | golden render (PSNR) |
