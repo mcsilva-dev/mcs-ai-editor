@@ -53,6 +53,19 @@ class TstDocument : public QObject {
         QVERIFY(doc.isModified());
     }
 
+    // Destruir com alterações não salvas: ~QUndoStack chama clear(), que emitiria cleanChanged
+    // para quem já está sendo destruído (crash ao fechar a MainWindow).
+    void destroyingModifiedDocumentIsSilent() {
+        int emitted = 0;
+        {
+            mcs::edit::TimelineDocument doc;
+            doc.apply(QStringLiteral("x"),
+                      mcs::core::EditResult{parseTimeline("V1: A[0..5) | A1: -"), {}});
+            QObject::connect(doc.undoStack(), &QUndoStack::cleanChanged, [&] { ++emitted; });
+        }
+        QCOMPARE(emitted, 0);
+    }
+
     void resetClearsHistory() {
         mcs::edit::TimelineDocument doc;
         doc.apply(QStringLiteral("x"),

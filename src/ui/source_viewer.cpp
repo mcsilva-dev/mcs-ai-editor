@@ -18,10 +18,13 @@ SourceViewer::SourceViewer(QWidget* parent) : QWidget(parent) {
     slider_->setObjectName(QStringLiteral("sourceScrubber"));
     slider_->setToolTip(tr("Scrub the source clip (arrow keys step one frame)"));
     timecode_ = new QLabel(this);
+    marks_ = new QLabel(this);
+    marks_->setObjectName(QStringLiteral("sourceMarks"));
     timecode_->setObjectName(QStringLiteral("sourceTimecode"));
 
     auto* bar = new QHBoxLayout;
     bar->addWidget(slider_, 1);
+    bar->addWidget(marks_);
     bar->addWidget(timecode_);
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -46,6 +49,7 @@ bool SourceViewer::openMedia(const QString& path) {
     slider_->setRange(0, static_cast<int>(decoder_->frameCount() - 1));
     slider_->setValue(0);
     showFrame(0);
+    clearMarks();
     return true;
 }
 
@@ -57,6 +61,7 @@ void SourceViewer::clear() {
     slider_->setEnabled(false);
     view_->setImage({});
     timecode_->setText(QStringLiteral("--:--:--:--"));
+    clearMarks();
 }
 
 std::int64_t SourceViewer::position() const {
@@ -93,6 +98,50 @@ void SourceViewer::showFrame(std::int64_t frame) {
     position_ = frame;
     view_->setImage(decoded ? decoded->image : QImage{});
     timecode_->setText(core::timecode(frame, decoder_->fps()));
+}
+
+void SourceViewer::markIn() {
+    if (!decoder_) {
+        return;
+    }
+    in_ = position_;
+    if (out_ && *out_ < *in_) {
+        out_.reset();
+    }
+    updateMarks();
+}
+
+void SourceViewer::markOut() {
+    if (!decoder_) {
+        return;
+    }
+    out_ = position_;
+    if (in_ && *in_ > *out_) {
+        in_.reset();
+    }
+    updateMarks();
+}
+
+void SourceViewer::clearMarks() {
+    in_.reset();
+    out_.reset();
+    updateMarks();
+}
+
+std::optional<std::int64_t> SourceViewer::inPoint() const {
+    return in_;
+}
+
+std::optional<std::int64_t> SourceViewer::outPoint() const {
+    return out_;
+}
+
+void SourceViewer::updateMarks() {
+    const core::Rational fps = decoder_ ? decoder_->fps() : core::Rational{};
+    auto text = [&](const std::optional<std::int64_t>& f) {
+        return f ? core::timecode(*f, fps) : QStringLiteral("--");
+    };
+    marks_->setText(tr("In %1  Out %2").arg(text(in_), text(out_)));
 }
 
 } // namespace mcs::ui

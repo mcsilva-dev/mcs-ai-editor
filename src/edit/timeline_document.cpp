@@ -27,6 +27,12 @@ TimelineDocument::TimelineDocument(QObject* parent) : QObject(parent) {
     stack_.setUndoLimit(200);
 }
 
+// ~QUndoStack chama clear(), que emite cleanChanged/indexChanged se havia alterações. Na
+// destruição da janela quem recebe já está meio destruído: o documento morre em silêncio.
+TimelineDocument::~TimelineDocument() {
+    stack_.blockSignals(true);
+}
+
 const core::Timeline& TimelineDocument::timeline() const {
     return timeline_;
 }

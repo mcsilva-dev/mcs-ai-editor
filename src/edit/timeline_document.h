@@ -17,6 +17,7 @@ class TimelineDocument : public QObject {
     Q_OBJECT
   public:
     explicit TimelineDocument(QObject* parent = nullptr);
+    ~TimelineDocument() override;
 
     const core::Timeline& timeline() const;
     // "" = aplicado; senão a mensagem de erro (nada muda, histórico intacto).

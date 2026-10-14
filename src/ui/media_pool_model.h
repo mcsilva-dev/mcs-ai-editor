@@ -34,6 +34,8 @@ class MediaPoolModel : public QAbstractListModel {
     // Arquivos já presentes são ignorados sem erro.
     QStringList importFiles(const QStringList& paths);
     const Item& item(int row) const;
+    QStringList paths() const;
+    void clear();
 
   signals:
     // Emitido quando o thumbnail da linha termina (também quando não há vídeo).

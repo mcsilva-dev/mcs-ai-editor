@@ -77,7 +77,7 @@ add_library(mcs_ui STATIC
 )
 target_include_directories(mcs_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(mcs_ui PUBLIC MCS_VERSION="${PROJECT_VERSION}")
-target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media mcs_playback PRIVATE Qt6::Concurrent mcs_warnings)
+target_link_libraries(mcs_ui PUBLIC Qt6::Widgets mcs_media mcs_playback mcs_edit PRIVATE Qt6::Concurrent mcs_warnings)
 
 qt_add_executable(mcs_ai_editor WIN32 MACOSX_BUNDLE app/main.cpp)
 target_link_libraries(mcs_ai_editor PRIVATE mcs_ui mcs_media mcs_warnings)
