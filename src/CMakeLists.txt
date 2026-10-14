@@ -10,6 +10,13 @@ add_library(mcs_core STATIC
 target_include_directories(mcs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mcs_core PUBLIC Qt6::Core PRIVATE mcs_warnings)
 
+add_library(mcs_edit STATIC
+    edit/timeline_document.h
+    edit/timeline_document.cpp
+)
+target_include_directories(mcs_edit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(mcs_edit PUBLIC mcs_core Qt6::Gui PRIVATE mcs_warnings)
+
 add_library(mcs_media STATIC
     media/ffmpeg_info.h
     media/ffmpeg_info.cpp
