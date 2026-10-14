@@ -4,9 +4,9 @@ Spec: [docs/superpowers/specs/2026-10-13-mcs-ai-editor-design.md](docs/superpowe
 
 ## Estado atual
 
-- **Fase:** v0.3.0 concluído (Subprojeto 1 — Núcleo + Edit)
-- **Próximo passo:** plano do v0.4 (edição básica: corte, mover, blade, undo/redo)
-- **Último plano:** [docs/superpowers/plans/2026-10-13-v0.3-playback.md](docs/superpowers/plans/2026-10-13-v0.3-playback.md)
+- **Fase:** v0.4.0 concluído (Subprojeto 1 — Núcleo + Edit)
+- **Próximo passo:** plano do v0.5 (trilha A2 primeiro; depois trims ripple/roll/slip/slide e JKL)
+- **Último plano:** [docs/superpowers/plans/2026-10-14-v0.4-edicao.md](docs/superpowers/plans/2026-10-14-v0.4-edicao.md)
 - **Repositório:** https://github.com/mcsilva-dev/mcs-ai-editor (main protegida: PR + CI verde)
 
 ## Histórico
@@ -77,3 +77,22 @@ Spec: [docs/superpowers/specs/2026-10-13-mcs-ai-editor-design.md](docs/superpowe
   - Decode em várias threads: o decoder entra em "esvaziamento" ~19 quadros antes do fim do
     arquivo e ainda solta quadros — só EOF exige seek (antes: 15 seeks em 60 quadros sequenciais).
   - Áudio sintético dos testes é uma rampa por amostra: prova amostra exata no mixer e no motor.
+
+### 2026-10-14 — v0.4.0 (edição básica e arquivo de projeto)
+- Feito: `edit_ops` puro (blade, lift, ripple delete, insert/overwrite de trecho da fonte, mover,
+  ímã, volume por clipe); `Clip` com `link` e `gainDb`; `mcs_edit` com `TimelineDocument` (ponto
+  único de edição, undo/redo por snapshot); `.mcsproj` JSON versionado (gravação atômica, 3
+  backups, autosave de 2 min); timeline interativa (seleção, Ctrl alterna, arrastar com ímã,
+  Linked Selection); atalhos B, Delete, Shift+Del, N, Ctrl+Shift+L, Ctrl+Alt+=/−, I, O, F9, F10;
+  menus New/Open/Save/Save As e Undo/Redo; título com `*` para alterações não salvas.
+- Decisões (Miguel): edição básica + projeto no v0.4; Linked Selection para tirar/baixar o áudio
+  de um vídeo e pôr outro (F10 com arquivo só de áudio substitui o trecho em A1); trilha A2
+  adiada para o início do v0.5; Subprojeto 7 (controle por IA via MCP) registrado na spec —
+  o `TimelineDocument` já é o ponto de entrada que o MCP vai usar.
+- Verificado: ctest 18/18; exe com PATH limpo (`--smoke`).
+- Observações/armadilhas:
+  - `~QUndoStack` chama `clear()`, que emite `cleanChanged` se havia alterações: ao fechar a janela
+    com mudanças não salvas o slot rodava num objeto meio destruído (0xc0000409). O documento
+    bloqueia os sinais da pilha no destrutor.
+  - Testes de edição em tabela com timelines em texto (`V1: A[0..10)@3 | A1: a[0..10)`) — barato
+    escrever casos novos.
